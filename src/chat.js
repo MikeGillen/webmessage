@@ -1,65 +1,3 @@
-let localIP;
-
-(async function main(){
-    try {
-        const response = await fetch('/api/ip');
-        const data = await response.json();
-        console.log(data);
-        localIP = data.ip;
-    } catch (error) {
-        console.error('Error fetching IP:', error);
-    }
-    console.log("Local IP:", localIP);
-})();
-console.log("Local IP:", localIP);
-
-// Set base href dynamically
-const baseTag = document.getElementById('baseIP');
-baseTag.setAttribute('href', `http://${localIP}:3000/`);
-
-// connects to websocket
-const ws = new WebSocket(`ws://${localIP}:4000/`); 
-ws.onopen = () => console.log("WebSocket connected!");
-ws.onerror = (err) => console.error("WebSocket error:", err);
-let dateState = false;
-
-ws.onmessage = function(event) {
-    const message = JSON.parse(event.data);
-    switch (message.type) {
-        case "history":
-            message.data.forEach(data => (addMessageToChatBox(data.username, data.content, data.unixTimestamp)));
-            break;
-        case "message":
-            addMessageToChatBox(message.data.username, message.data.content, message.data.unixTimestamp);
-            break;
-    }
-};
-
-document.getElementById('chat-send').addEventListener('click', function() {
-    const messageInput = document.getElementById('message-input');
-    const message = messageInput.value.trim();
-
-    if (message) {
-        ws.send(JSON.stringify({ data: message}));
-        messageInput.value = '';
-    }
-});
-
-document.getElementById('message-input').addEventListener('keypress', function(event) {
-    if (event.key === 'Enter') {
-        document.getElementById('send-button').click();
-    }
-});
-
-document.getElementById('date-button').addEventListener('click', ()=>{
-    const image = document.getElementById('expand-img');
-    image.style.transform = dateState ? 'rotateX(0deg)' : 'rotateX(180deg)';
-    Array.from(document.getElementsByClassName('date')).forEach((element)=>{
-        element.style.display = dateState ? 'none' : 'flex';
-    });
-    dateState = !dateState;
-});
-
 function addMessageToChatBox(username,message,date) {
     const chatBox = document.getElementById('message-box');
     const messageElement = document.createElement('div');
@@ -89,3 +27,65 @@ function formatUnixTimestamp(unixTimestamp) {
 
     return {year: yy, month: mm, day: dd, hour: hh, minute: mi, second: ss};
 }
+
+(async function main(){
+    let localIP;
+
+    try {
+        const response = await fetch('/api/ip');
+        const data = await response.json();
+        console.log(data);
+        localIP = data.ip;
+    } catch (error) {
+        console.error('Error fetching IP:', error);
+    }
+    console.log("Local IP:", localIP);
+
+    // Set base href dynamically
+    const baseTag = document.getElementById('baseIP');
+    baseTag.setAttribute('href', `http://${localIP}:3000/`);
+
+    // connects to websocket
+    const ws = new WebSocket(`ws://${localIP}:4000/`); 
+    ws.onopen = () => console.log("WebSocket connected!");
+    ws.onerror = (err) => console.error("WebSocket error:", err);
+    let dateState = false;
+
+    ws.onmessage = function(event) {
+        const message = JSON.parse(event.data);
+        switch (message.type) {
+            case "history":
+                message.data.forEach(data => (addMessageToChatBox(data.username, data.content, data.unixTimestamp)));
+                break;
+            case "message":
+                addMessageToChatBox(message.data.username, message.data.content, message.data.unixTimestamp);
+                break;
+        }
+    };
+
+    document.getElementById('chat-send').addEventListener('click', function() {
+        const messageInput = document.getElementById('message-input');
+        const message = messageInput.value.trim();
+
+        if (message) {
+            ws.send(JSON.stringify({ data: message}));
+            messageInput.value = '';
+        }
+    });
+
+    document.getElementById('message-input').addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            document.getElementById('send-button').click();
+        }
+    });
+
+    document.getElementById('date-button').addEventListener('click', ()=>{
+        const image = document.getElementById('expand-img');
+        image.style.transform = dateState ? 'rotateX(0deg)' : 'rotateX(180deg)';
+        Array.from(document.getElementsByClassName('date')).forEach((element)=>{
+            element.style.display = dateState ? 'none' : 'flex';
+        });
+        dateState = !dateState;
+    });
+
+})();
