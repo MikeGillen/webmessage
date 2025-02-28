@@ -1,4 +1,13 @@
-const ws = new WebSocket('ws://192.168.1.198:4000/'); 
+fetch('/api/ip')
+    .then(response => response.json())
+    .then(data => {
+        const localIp = data.ip;
+    })
+    .catch(error => console.error('Error fetching IP:', error));
+
+let baseTag = document.getElementById("baseIP");
+baseTag.setAttribute("href",`http://${localIp}:3000/`);
+const ws = new WebSocket('ws://${localIP}:4000/'); 
 let dateState = false;
 
 ws.onmessage = function(event) {

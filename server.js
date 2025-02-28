@@ -5,6 +5,21 @@ const WebSocket = require('ws');
 const cookieParser = require('cookie-parser');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const os = require('os');
+
+function getLocalIP() {
+    const interfaces = os.networkInterfaces();
+    for (const iface of Object.values(interfaces)) {
+        for (const config of iface) {
+            if (config.family === 'IPv4' && !config.internal) {
+                return config.address;
+            }
+        }
+    }
+    return 'localhost'; // Fallback
+}
+
+const localIP = getLocalIP();
 
 const port = 3000;
 
@@ -46,6 +61,11 @@ const db = new sqlite3.Database('database.db', (err) => {
     } else {
         console.log('Connected to SQLite database.');
     }
+});
+
+// API to send the IP
+app.get('/api/ip', (req, res) => {
+    res.json({ ip: localIP });
 });
 
 // deliver html for index page
@@ -205,4 +225,4 @@ wss.on('connection', (ws, req) => {
     });
 });
 
-app.listen(process.env.PORT || port, () => console.log(`192.168.1.198:${port}`));
+app.listen(process.env.PORT || port, () => console.log(`${localIP}:${port}`));
