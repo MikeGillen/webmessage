@@ -4,7 +4,7 @@ async function getLocalIp() {
     try {
         const response = await fetch('/api/ip');
         const data = await response.json();
-        return data.ip; // Return the fetched IP
+        return data.ip;
     } catch (error) {
         console.error('Error fetching IP:', error);
         return null;
@@ -16,13 +16,17 @@ async function getLocalIp() {
     if (localIP) {
         console.log("IP Address:", localIP);
 
-        // Example: Set base href dynamically
+        // Set base href dynamically
         const baseTag = document.getElementById('baseIP');
         if (baseTag) {
             baseTag.setAttribute('href', `http://${localIP}:3000/`);
         }
 
-        // Continue running other scripts that depend on IP...
+        // ✅ Now create the WebSocket connection
+        const ws = new WebSocket(`ws://${localIP}:4000/`);
+        
+        ws.onopen = () => console.log("WebSocket connected!");
+        ws.onerror = (err) => console.error("WebSocket error:", err);
     }
 })();
 
