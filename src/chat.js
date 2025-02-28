@@ -11,24 +11,19 @@ async function getLocalIp() {
     }
 }
 
-(async () => {
-    localIP = await getLocalIp();
-    if (localIP) {
-        console.log("IP Address:", localIP);
 
-        // Set base href dynamically
-        const baseTag = document.getElementById('baseIP');
-        if (baseTag) {
-            baseTag.setAttribute('href', `http://${localIP}:3000/`);
-        }
+localIP = getLocalIp();
+console.log("IP Address:", localIP);
 
-        // ✅ Now create the WebSocket connection
-        const ws = new WebSocket(`ws://${localIP}:4000/`);
-        
-        ws.onopen = () => console.log("WebSocket connected!");
-        ws.onerror = (err) => console.error("WebSocket error:", err);
-    }
-})();
+// Set base href dynamically
+const baseTag = document.getElementById('baseIP');
+baseTag.setAttribute('href', `http://${localIP}:3000/`);
+
+// ✅ Now create the WebSocket connection
+const ws = new WebSocket(`ws://${localIP}:4000/`);
+
+ws.onopen = () => console.log("WebSocket connected!");
+ws.onerror = (err) => console.error("WebSocket error:", err);
 
 const ws = new WebSocket(`ws://${localIP}:4000/`); 
 let dateState = false;
