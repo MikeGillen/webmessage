@@ -8,9 +8,12 @@ async function getLocalIp() {
         return null;
     }
 }
+let localIP;
 
-const localIP = await getLocalIp();
-console.log("IP Address:", localIP);
+(async () => {
+    localIP = await getLocalIp();
+    console.log("Local IP:", localIP);
+})();
 
 // Set base href dynamically
 const baseTag = document.getElementById('baseIP');
