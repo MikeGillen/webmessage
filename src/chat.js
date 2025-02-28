@@ -1,16 +1,19 @@
 let localIP;
 
-await new Promise(async (resolve)=>{
-    try {
-        const response = await fetch('/api/ip');
-        const data = await response.json();
-    } catch (error) {
-        console.error('Error fetching IP:', error);
-    }
-    localIP = await getLocalIp();
-    console.log("Local IP:", localIP);
-    resolve(true);
-})
+(async function main(){
+    await new Promise(async (resolve)=>{
+        try {
+            const response = await fetch('/api/ip');
+            const data = await response.json();
+        } catch (error) {
+            console.error('Error fetching IP:', error);
+        }
+        localIP = await getLocalIp();
+        console.log("Local IP:", localIP);
+        resolve(true);
+    })
+})();
+
 
 // Set base href dynamically
 const baseTag = document.getElementById('baseIP');
