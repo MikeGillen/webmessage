@@ -5,6 +5,7 @@ let localIP;
         try {
             const response = await fetch('/api/ip');
             const data = response.json();
+            console.log(response);
             localIP = data.ip;
         } catch (error) {
             console.error('Error fetching IP:', error);
