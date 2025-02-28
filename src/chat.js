@@ -8,7 +8,7 @@ let localIP;
         } catch (error) {
             console.error('Error fetching IP:', error);
         }
-        localIP = await getLocalIp();
+        localIP = data.ip;
         console.log("Local IP:", localIP);
         resolve(true);
     })
