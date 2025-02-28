@@ -1,3 +1,5 @@
+let localIP;
+
 async function getLocalIp() {
     try {
         const response = await fetch('/api/ip');
@@ -10,7 +12,7 @@ async function getLocalIp() {
 }
 
 (async () => {
-    const localIP = await getLocalIp();
+    localIP = await getLocalIp();
     if (localIP) {
         console.log("IP Address:", localIP);
 
