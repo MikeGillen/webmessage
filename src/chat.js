@@ -1,5 +1,3 @@
-let localIP;
-
 async function getLocalIp() {
     try {
         const response = await fetch('/api/ip');
@@ -11,8 +9,7 @@ async function getLocalIp() {
     }
 }
 
-
-localIP = getLocalIp();
+const localIP = await getLocalIp();
 console.log("IP Address:", localIP);
 
 // Set base href dynamically
