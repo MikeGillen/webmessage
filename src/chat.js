@@ -10,14 +10,14 @@ async function getLocalIp() {
 }
 
 (async () => {
-    const localIp = await getLocalIp();
-    if (localIp) {
+    const localIP = await getLocalIp();
+    if (localIP) {
         console.log("IP Address:", localIp);
 
         // Example: Set base href dynamically
         const baseTag = document.getElementById('baseIP');
         if (baseTag) {
-            baseTag.setAttribute('href', `http://${localIp}:3000/`);
+            baseTag.setAttribute('href', `http://${localIP}:3000/`);
         }
 
         // Continue running other scripts that depend on IP...
