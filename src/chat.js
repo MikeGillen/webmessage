@@ -4,11 +4,11 @@ let localIP;
     await new Promise(async (resolve)=>{
         try {
             const response = await fetch('/api/ip');
-            const data = await response.json();
+            const data = response.json();
+            localIP = data.ip;
         } catch (error) {
             console.error('Error fetching IP:', error);
         }
-        localIP = data.ip;
         console.log("Local IP:", localIP);
         resolve(true);
     })
