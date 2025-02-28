@@ -24,7 +24,7 @@ const localIP = getLocalIP();
 const port = 3000;
 
 const app = express();
-const wss = new WebSocket.Server({host: `${localIp}`,port: '4000' });
+const wss = new WebSocket.Server({host: `${localIP}`,port: '4000' });
 
 // Midlleware to server static files (css, js, images)
 app.use(express.static(path.join(__dirname, 'src')));
