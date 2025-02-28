@@ -1,12 +1,29 @@
-fetch('/api/ip')
-    .then(response => response.json())
-    .then(data => {
-        const localIp = data.ip;
-    })
-    .catch(error => console.error('Error fetching IP:', error));
+async function getLocalIp() {
+    try {
+        const response = await fetch('/api/ip');
+        const data = await response.json();
+        return data.ip; // Return the fetched IP
+    } catch (error) {
+        console.error('Error fetching IP:', error);
+        return null;
+    }
+}
 
-let baseTag = document.getElementById("baseIP");
-baseTag.setAttribute("href",`http://${localIp}:3000/`);
+(async () => {
+    const localIp = await getLocalIp();
+    if (localIp) {
+        console.log("IP Address:", localIp);
+
+        // Example: Set base href dynamically
+        const baseTag = document.getElementById('baseIP');
+        if (baseTag) {
+            baseTag.setAttribute('href', `http://${localIp}:3000/`);
+        }
+
+        // Continue running other scripts that depend on IP...
+    }
+})();
+
 const ws = new WebSocket('ws://${localIP}:4000/'); 
 let dateState = false;
 
