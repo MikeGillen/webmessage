@@ -19,13 +19,9 @@ console.log("IP Address:", localIP);
 const baseTag = document.getElementById('baseIP');
 baseTag.setAttribute('href', `http://${localIP}:3000/`);
 
-// ✅ Now create the WebSocket connection
-const ws = new WebSocket(`ws://${localIP}:4000/`);
-
+const ws = new WebSocket(`ws://${localIP}:4000/`); 
 ws.onopen = () => console.log("WebSocket connected!");
 ws.onerror = (err) => console.error("WebSocket error:", err);
-
-const ws = new WebSocket(`ws://${localIP}:4000/`); 
 let dateState = false;
 
 ws.onmessage = function(event) {
