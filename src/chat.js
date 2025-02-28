@@ -12,7 +12,7 @@ async function getLocalIp() {
 (async () => {
     const localIP = await getLocalIp();
     if (localIP) {
-        console.log("IP Address:", localIp);
+        console.log("IP Address:", localIP);
 
         // Example: Set base href dynamically
         const baseTag = document.getElementById('baseIP');
@@ -24,7 +24,7 @@ async function getLocalIp() {
     }
 })();
 
-const ws = new WebSocket('ws://${localIP}:4000/'); 
+const ws = new WebSocket(`ws://${localIP}:4000/`); 
 let dateState = false;
 
 ws.onmessage = function(event) {
