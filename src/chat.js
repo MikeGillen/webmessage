@@ -1,17 +1,16 @@
 let localIP;
 
 (async function main(){
-    await new Promise(async (resolve)=>{
-        try {
-            const response = await fetch('/api/ip');
-            console.log(response);
-            localIP = response.ip;
-        } catch (error) {
-            console.error('Error fetching IP:', error);
-        }
-        console.log("Local IP:", localIP);
-        resolve(true);
-    })
+    try {
+        const response = await fetch('/api/ip');
+        const data = await response.json();
+        console.log(data);
+        localIP = data.ip;
+    } catch (error) {
+        console.error('Error fetching IP:', error);
+    }
+    console.log("Local IP:", localIP);
+    resolve(true);
 })();
 
 
@@ -19,6 +18,7 @@ let localIP;
 const baseTag = document.getElementById('baseIP');
 baseTag.setAttribute('href', `http://${localIP}:3000/`);
 
+// connects to websocket
 const ws = new WebSocket(`ws://${localIP}:4000/`); 
 ws.onopen = () => console.log("WebSocket connected!");
 ws.onerror = (err) => console.error("WebSocket error:", err);
