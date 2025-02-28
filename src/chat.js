@@ -10,9 +10,8 @@ let localIP;
         console.error('Error fetching IP:', error);
     }
     console.log("Local IP:", localIP);
-    resolve(true);
 })();
-
+console.log("Local IP:", localIP);
 
 // Set base href dynamically
 const baseTag = document.getElementById('baseIP');
