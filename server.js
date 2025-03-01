@@ -28,10 +28,30 @@
         findIP();
     });
 
+
     const localIP = getLocalIP();
     const app = express();
     const port = 3000;
     const wss = new WebSocket.Server({host: `${localIP}`,port: '4000' });
+
+    function checkSession(req, res) {
+        return new Promise((resolve, reject) => {
+            let sessionId = req.cookies.sessionId;
+    
+            if (!sessionId) {
+                return reject({ redirect: true });
+            }
+            
+            db.get('SELECT * FROM sessions WHERE id = ?', [sessionId], (err, session) => {
+                if (err || !session) {
+                    console.error('❌ Invalid session:', err ? err.message : 'Session not found');
+                    return reject({ redirect: true });
+                }
+    
+                resolve(session.username); // Resolve with the username
+            });
+        });
+    }
 
     // Midlleware to server static files (css, js, images)
     app.use(express.static(path.join(__dirname, 'src')));
@@ -42,186 +62,169 @@
     //readfiles easier instead of writing fs.promises.readFile(...)
     const { readFile } = require('fs').promises;
 
-    app.listen(process.env.PORT || port, () => console.log(`${localIP}:${port}`));
-})();
 
-function checkSession(req, res) {
-    return new Promise((resolve, reject) => {
-        let sessionId = req.cookies.sessionId;
+    // API to send the IP
+    app.get('/api/ip', (req, res) => {
+        res.json({ ip: localIP });
+    });
 
-        if (!sessionId) {
-            return reject({ redirect: true });
+    // deliver html for index page
+    app.get('/', async (req, res) => {
+        try {
+            const username = await checkSession(req);
+            res.cookie('sessionUsername', username, { httpOnly: false });
+            res.send(await readFile('./src/chat.html', 'utf8'));
+        } catch (err) {
+            return res.redirect('/auth');
         }
-        
-        db.get('SELECT * FROM sessions WHERE id = ?', [sessionId], (err, session) => {
-            if (err || !session) {
-                console.error('❌ Invalid session:', err ? err.message : 'Session not found');
-                return reject({ redirect: true });
+    });
+
+    // deliver html for chat page
+    app.get('/auth', async (req, res) => {
+        res.send( await readFile('./src/auth.html','utf8'));
+    });
+
+    // manage login and register
+    app.post('/auth', (req, res) => {
+        const { username, password } = req.body;
+
+        db.get('SELECT * FROM auth WHERE username = ?', [username], (err, auth) => {
+            if (err) {
+                console.error('❌ Database Error:', err.message);
+                return res.status(500).json({ 
+                    success: false, 
+                    message: 'Database error', 
+                    type: 'check register/login',
+                    error: err.message 
+                });
             }
 
-            resolve(session.username); // Resolve with the username
-        });
-    });
-}
-
-// API to send the IP
-app.get('/api/ip', (req, res) => {
-    res.json({ ip: localIP });
-});
-
-// deliver html for index page
-app.get('/', async (req, res) => {
-    try {
-        const username = await checkSession(req);
-        res.cookie('sessionUsername', username, { httpOnly: false });
-        res.send(await readFile('./src/chat.html', 'utf8'));
-    } catch (err) {
-        return res.redirect('/auth');
-    }
-});
-
-// deliver html for chat page
-app.get('/auth', async (req, res) => {
-    res.send( await readFile('./src/auth.html','utf8'));
-});
-
-// manage login and register
-app.post('/auth', (req, res) => {
-    const { username, password } = req.body;
-
-    db.get('SELECT * FROM auth WHERE username = ?', [username], (err, auth) => {
-        if (err) {
-            console.error('❌ Database Error:', err.message);
-            return res.status(500).json({ 
-                success: false, 
-                message: 'Database error', 
-                type: 'check register/login',
-                error: err.message 
-            });
-        }
-
-        if (auth) {
-            // User exists, check password
-            bcrypt.compare(password, auth.password, (err, result) => {
-                if (result) {
-                    // Generate session ID
-                    const sessionId = uuidv4();
-                    db.run('INSERT INTO sessions (id, username) VALUES (?, ?)', [sessionId, username], (err) => {
-                        if (err) {
-                            console.error('❌ Error creating session:', err.message);
-                            return res.status(500).json({ 
-                                success: false, 
-                                message: 'Error creating session', 
-                                type: 'session',
-                                error: err.message 
-                            });
-                        }
-                        // Set session ID as a cookie
-                        res.cookie('sessionId', sessionId, { httpOnly: true });
-                        res.json({ success: true, message: 'Login successful', type: 'login' });
-                    });
-                } else {
-                    console.error('❌ Incorrect password:');
-                    return res.json({ 
-                        success: false, 
-                        message: 'Incorrect password',
-                        type: 'login'
-                    });
-                }
-            });
-        } else {
-            // User does not exist, create new auth
-            bcrypt.hash(password, 10, (err, hash) => {
-                if (err) {
-                    console.error('❌ Error hashing password:', err.message);
-                    return res.status(500).json({ 
-                        success: false, 
-                        message: 'Error hashing password', 
-                        type: 'hashing',
-                        error: err.message 
-                    });
-                }
-
-                db.run('INSERT INTO auth (username, password) VALUES (?, ?)', [username, hash], (err) => {
+            if (auth) {
+                // User exists, check password
+                bcrypt.compare(password, auth.password, (err, result) => {
+                    if (result) {
+                        // Generate session ID
+                        const sessionId = uuidv4();
+                        db.run('INSERT INTO sessions (id, username) VALUES (?, ?)', [sessionId, username], (err) => {
+                            if (err) {
+                                console.error('❌ Error creating session:', err.message);
+                                return res.status(500).json({ 
+                                    success: false, 
+                                    message: 'Error creating session', 
+                                    type: 'session',
+                                    error: err.message 
+                                });
+                            }
+                            // Set session ID as a cookie
+                            res.cookie('sessionId', sessionId, { httpOnly: true });
+                            res.json({ success: true, message: 'Login successful', type: 'login' });
+                        });
+                    } else {
+                        console.error('❌ Incorrect password:');
+                        return res.json({ 
+                            success: false, 
+                            message: 'Incorrect password',
+                            type: 'login'
+                        });
+                    }
+                });
+            } else {
+                // User does not exist, create new auth
+                bcrypt.hash(password, 10, (err, hash) => {
                     if (err) {
-                        console.error('❌ Error creating auth:', err.message);
+                        console.error('❌ Error hashing password:', err.message);
                         return res.status(500).json({ 
                             success: false, 
-                            message: 'Error creating auth', 
-                            type: 'register',
+                            message: 'Error hashing password', 
+                            type: 'hashing',
                             error: err.message 
                         });
                     }
-                    // Generate session ID
-                    const sessionId = uuidv4();
-                    db.run('INSERT INTO sessions (id, username) VALUES (?, ?)', [sessionId, username], (err) => {
+
+                    db.run('INSERT INTO auth (username, password) VALUES (?, ?)', [username, hash], (err) => {
                         if (err) {
-                            console.error('❌ Error creating session:', err.message);
+                            console.error('❌ Error creating auth:', err.message);
                             return res.status(500).json({ 
                                 success: false, 
-                                message: 'Error creating session', 
-                                type: 'session',
+                                message: 'Error creating auth', 
+                                type: 'register',
                                 error: err.message 
                             });
                         }
-                        // Set session ID as a cookie
-                        res.cookie('sessionId', sessionId, { httpOnly: true });
-                        res.json({ success: true, message: 'User registered successfully', type: 'register' });
+                        // Generate session ID
+                        const sessionId = uuidv4();
+                        db.run('INSERT INTO sessions (id, username) VALUES (?, ?)', [sessionId, username], (err) => {
+                            if (err) {
+                                console.error('❌ Error creating session:', err.message);
+                                return res.status(500).json({ 
+                                    success: false, 
+                                    message: 'Error creating session', 
+                                    type: 'session',
+                                    error: err.message 
+                                });
+                            }
+                            // Set session ID as a cookie
+                            res.cookie('sessionId', sessionId, { httpOnly: true });
+                            res.json({ success: true, message: 'User registered successfully', type: 'register' });
+                        });
                     });
                 });
-            });
-        }
-    });
-});
-
-// WebSocket connection
-wss.on('connection', (ws, req) => {
-
-    //get username from cookie
-    let username = null;
-    if (req.headers.cookie) {
-        const cookies = req.headers.cookie.split('; ');
-        const usernameCookie = cookies.find(c => c.startsWith('sessionUsername='));
-        if (usernameCookie) {
-            username = decodeURIComponent(usernameCookie.split('=')[1]);
-        }
-    }
-
-    // Send all previous messages to the newly connected client
-    db.all('SELECT * FROM chat', (err, rows) => {
-        if (err) {
-            console.error('❌ failed to load history:', err.message);
-        } else {
-            ws.send(JSON.stringify({
-                success: true, 
-                message: "successfully loaded history", 
-                type: 'history', 
-                data: rows.map(row => ({ content: row.content, username: row.username, unixTimestamp: row.timestamp}))
-            }));
-        }
-    });
-
-    // Handle incoming messages
-    ws.on('message', (data) => {
-        const parsedData = JSON.parse(data);
-        const { data: content} = parsedData;
-        const unixTimestamp = Math.floor(Date.now() / 1000);
-        // Store the message
-        db.run('INSERT INTO chat (content, username, timestamp) VALUES (?, ?, ?)', [content, username, unixTimestamp], (err) => {
-            if (err) {
-                console.error('❌ failed to upload message:', err.message);
             }
         });
-        // Broadcast the message to all clients
-        wss.clients.forEach((client) => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(JSON.stringify({ 
-                    success: true,
-                    message: "successfully uploaded message",
-                    type: 'message', 
-                    data: { content, username, unixTimestamp} 
+    });
+
+    // WebSocket connection
+    wss.on('connection', (ws, req) => {
+
+        //get username from cookie
+        let username = null;
+        if (req.headers.cookie) {
+            const cookies = req.headers.cookie.split('; ');
+            const usernameCookie = cookies.find(c => c.startsWith('sessionUsername='));
+            if (usernameCookie) {
+                username = decodeURIComponent(usernameCookie.split('=')[1]);
+            }
+        }
+
+        // Send all previous messages to the newly connected client
+        db.all('SELECT * FROM chat', (err, rows) => {
+            if (err) {
+                console.error('❌ failed to load history:', err.message);
+            } else {
+                ws.send(JSON.stringify({
+                    success: true, 
+                    message: "successfully loaded history", 
+                    type: 'history', 
+                    data: rows.map(row => ({ content: row.content, username: row.username, unixTimestamp: row.timestamp}))
                 }));
             }
         });
+
+        // Handle incoming messages
+        ws.on('message', (data) => {
+            const parsedData = JSON.parse(data);
+            const { data: content} = parsedData;
+            const unixTimestamp = Math.floor(Date.now() / 1000);
+            // Store the message
+            db.run('INSERT INTO chat (content, username, timestamp) VALUES (?, ?, ?)', [content, username, unixTimestamp], (err) => {
+                if (err) {
+                    console.error('❌ failed to upload message:', err.message);
+                }
+            });
+            // Broadcast the message to all clients
+            wss.clients.forEach((client) => {
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(JSON.stringify({ 
+                        success: true,
+                        message: "successfully uploaded message",
+                        type: 'message', 
+                        data: { content, username, unixTimestamp} 
+                    }));
+                }
+            });
+        });
     });
-});
+
+
+    app.listen(process.env.PORT || port, () => console.log(`${localIP}:${port}`));
+})();
