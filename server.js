@@ -1,3 +1,49 @@
+(async function main(){
+    const express = require('express');
+    const sqlite3 = require('sqlite3').verbose();
+    const bcrypt = require('bcrypt');
+    const WebSocket = require('ws');
+    const cookieParser = require('cookie-parser');
+    const { v4: uuidv4 } = require('uuid');
+    const path = require('path');
+    const os = require('os');
+    // Connect to SQLite database
+    const db = new sqlite3.Database('database.db', (err) => {
+        if (err) {
+            console.error('Error connecting to database:', err.message);
+        } else {
+            console.log('Connected to SQLite database.');
+        }
+    });
+
+    const getLocalIP = () => new Promise((resolve) => {
+        const findIP = () => {
+            for (const iface of Object.values(networkInterfaces())) {
+                for (const { family, internal, address } of iface) {
+                    if (family === 'IPv4' && !internal) return resolve(address);
+                }
+            }
+            setTimeout(findIP, 1000); // Retry if no IP found
+        };
+        findIP();
+    });
+
+    const localIP = getLocalIP();
+    const app = express();
+    const port = 3000;
+    const wss = new WebSocket.Server({host: `${localIP}`,port: '4000' });
+
+    // Midlleware to server static files (css, js, images)
+    app.use(express.static(path.join(__dirname, 'src')));
+    // Middleware to parse cookies
+    app.use(cookieParser());
+    // Middleware to parse JSON
+    app.use(express.json());
+    //readfiles easier instead of writing fs.promises.readFile(...)
+    const { readFile } = require('fs').promises;
+
+    app.listen(process.env.PORT || port, () => console.log(`${localIP}:${port}`));
+})();
 
 function checkSession(req, res) {
     return new Promise((resolve, reject) => {
@@ -179,50 +225,3 @@ wss.on('connection', (ws, req) => {
         });
     });
 });
-
-(async function main(){
-    const express = require('express');
-    const sqlite3 = require('sqlite3').verbose();
-    const bcrypt = require('bcrypt');
-    const WebSocket = require('ws');
-    const cookieParser = require('cookie-parser');
-    const { v4: uuidv4 } = require('uuid');
-    const path = require('path');
-    const os = require('os');
-    // Connect to SQLite database
-    const db = new sqlite3.Database('database.db', (err) => {
-        if (err) {
-            console.error('Error connecting to database:', err.message);
-        } else {
-            console.log('Connected to SQLite database.');
-        }
-    });
-
-    const getLocalIP = () => new Promise((resolve) => {
-        const findIP = () => {
-            for (const iface of Object.values(networkInterfaces())) {
-                for (const { family, internal, address } of iface) {
-                    if (family === 'IPv4' && !internal) return resolve(address);
-                }
-            }
-            setTimeout(findIP, 1000); // Retry if no IP found
-        };
-        findIP();
-    });
-
-    const localIP = getLocalIP();
-    const app = express();
-    const port = 3000;
-    const wss = new WebSocket.Server({host: `${localIP}`,port: '4000' });
-
-    // Midlleware to server static files (css, js, images)
-    app.use(express.static(path.join(__dirname, 'src')));
-    // Middleware to parse cookies
-    app.use(cookieParser());
-    // Middleware to parse JSON
-    app.use(express.json());
-    //readfiles easier instead of writing fs.promises.readFile(...)
-    const { readFile } = require('fs').promises;
-
-    app.listen(process.env.PORT || port, () => console.log(`${localIP}:${port}`));
-})();
