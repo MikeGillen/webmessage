@@ -1,2 +1,5 @@
 echo "Starting the Node.js server..."
-node server.js
+
+cd /home/WorkaMikeLukas/Desktop/webmessage/
+
+node ./server.js
