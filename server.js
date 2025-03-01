@@ -18,15 +18,6 @@ function checkSession(req, res) {
     });
 }
 
-// Connect to SQLite database
-const db = new sqlite3.Database('database.db', (err) => {
-    if (err) {
-        console.error('Error connecting to database:', err.message);
-    } else {
-        console.log('Connected to SQLite database.');
-    }
-});
-
 // API to send the IP
 app.get('/api/ip', (req, res) => {
     res.json({ ip: localIP });
@@ -198,6 +189,14 @@ wss.on('connection', (ws, req) => {
     const { v4: uuidv4 } = require('uuid');
     const path = require('path');
     const os = require('os');
+    // Connect to SQLite database
+    const db = new sqlite3.Database('database.db', (err) => {
+        if (err) {
+            console.error('Error connecting to database:', err.message);
+        } else {
+            console.log('Connected to SQLite database.');
+        }
+    });
 
     const getLocalIP = () => new Promise((resolve) => {
         const findIP = () => {
